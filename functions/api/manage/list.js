@@ -1,4 +1,4 @@
-﻿const INVALID_PREFIXES = ['session:', 'chunk:', 'upload:', 'temp:'];
+const INVALID_PREFIXES = ['session:', 'chunk:', 'upload:', 'temp:'];
 
 const IMAGE_EXTS = new Set(['jpg', 'jpeg', 'png', 'gif', 'webp', 'bmp', 'tiff', 'ico', 'svg', 'heic', 'heif', 'avif']);
 const VIDEO_EXTS = new Set(['mp4', 'webm', 'ogg', 'avi', 'mov', 'wmv', 'flv', 'mkv', 'm4v', '3gp', 'ts']);
@@ -213,12 +213,27 @@ async function listAllKeys(env, prefix = '') {
 
 export async function onRequest(context) {
   const { request, env } = context;
+  
+  // 添加 CORS 头，允许所有来源访问
+  const corsHeaders = {
+    'Access-Control-Allow-Origin': '*',
+    'Access-Control-Allow-Methods': 'GET, OPTIONS',
+    'Access-Control-Allow-Headers': 'Content-Type',
+  };
+
+  // 处理 OPTIONS 预检请求
+  if (request.method === 'OPTIONS') {
+    return new Response(null, {
+      headers: corsHeaders
+    });
+  }
+
   const url = new URL(request.url);
 
   if (!env.img_url) {
     return new Response(JSON.stringify({ error: 'KV binding img_url is not configured.' }), {
       status: 500,
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 'Content-Type': 'application/json', ...corsHeaders },
     });
   }
 
@@ -274,6 +289,6 @@ export async function onRequest(context) {
   }
 
   return new Response(JSON.stringify(payload), {
-    headers: { 'Content-Type': 'application/json' },
+    headers: { 'Content-Type': 'application/json', ...corsHeaders },
   });
 }
