@@ -844,11 +844,11 @@
       <div class="toolbar-left">
         <span class="stat-badge"><i class="fas fa-images"></i> 总数<strong>{{ totalCount }}</strong></span>
         <span class="stat-badge"><i class="fas fa-check-square"></i> 已选<strong>{{ selectedCount }}</strong></span>
-        <button class="nav-btn" @click="selectAll" v-if="!isGuest">
+        <button class="nav-btn" @click="selectAll">
           <i :class="isAllSelected ? 'fas fa-square' : 'fas fa-check-square'"></i>
           {{ isAllSelected ? '取消全选' : '全选' }}
         </button>
-        <button class="nav-btn" @click="loadMore" v-if="hasMore && !isGuest" :disabled="loading">
+        <button class="nav-btn" @click="loadMore" v-if="hasMore" :disabled="loading">
           <i class="fas fa-sync" :class="{ 'fa-spin': loading }"></i>
           加载更多
         </button>
@@ -892,7 +892,7 @@
             <button class="card-btn" @click.stop="downloadImage(img)" title="下载">
               <i class="fas fa-download"></i>
             </button>
-            <button class="card-btn delete" @click.stop="deleteImage(img, index)" title="删除" v-if="!isGuest">
+            <button class="card-btn delete" @click.stop="deleteImage(img, index)" title="删除">
               <i class="fas fa-trash"></i>
             </button>
           </div>
@@ -917,7 +917,7 @@
     </div>
 
     <!-- 分页 -->
-    <div class="pagination" v-if="totalPages > 1 && !isGuest">
+    <div class="pagination" v-if="totalPages > 1">
       <button class="page-btn" @click="currentPage = 1" :disabled="currentPage === 1">
         <i class="fas fa-angle-double-left"></i>
       </button>
@@ -937,8 +937,8 @@
       </button>
     </div>
 
-    <!-- 批量操作栏 - 仅非访客显示 -->
-    <div class="batch-bar" v-if="selectedCount > 0 && !isGuest">
+    <!-- 批量操作栏 -->
+    <div class="batch-bar" v-if="selectedCount > 0">
       <div class="batch-bar-count">已选择 <strong>{{ selectedCount }}</strong> 个文件</div>
       <button class="batch-btn primary" @click="batchCopy">
         <i class="fas fa-copy"></i> 复制链接
@@ -1005,10 +1005,9 @@
         pageSize: 30,
         nextCursor: null,
         hasMore: true,
-        previewData: null,
+        previewData: null,  // 新的预览数据对象
         toasts: [],
-        searchTimer: null,
-        isGuest: false
+        searchTimer: null
       },
       computed: {
         filteredImages() {
@@ -1078,19 +1077,20 @@
         }
       },
       methods: {
-        // 修改后的 loadImages 函数 - 访客可见
         async loadImages() {
           this.loading = true;
           try {
-            // 直接请求，不带任何凭证
-            const response = await fetch('./api/manage/list?limit=100');
+            const response = await fetch('./api/manage/list?limit=100', {
+              method: 'GET',
+              credentials: 'include'
+            });
             
-            if (!response.ok) {
-              throw new Error(`HTTP error! status: ${response.status}`);
+            if (response.status === 401) {
+              window.location.href = './api/manage/login';
+              return;
             }
 
             const result = await response.json();
-            
             const invalidPrefixes = ['session:', 'chunk:', 'upload:', 'temp:'];
             const filtered = (result.keys || []).filter(img => {
               if (!img.name) return false;
@@ -1098,7 +1098,6 @@
               const metadata = img.metadata || {};
               return metadata.fileName && metadata.TimeStamp !== undefined && metadata.TimeStamp !== null;
             });
-            
             this.images = filtered.map(img => ({
               ...img,
               selected: false,
@@ -1107,28 +1106,22 @@
                 fileName: img.metadata?.fileName || img.name
               }
             }));
-            
             this.nextCursor = result.list_complete ? null : result.cursor;
             this.hasMore = !result.list_complete;
           } catch (error) {
-            console.error('加载失败:', error);
             this.showToast('加载失败，请检查网络', 'error');
-          } finally {
-            this.loading = false;
           }
+          this.loading = false;
         },
 
-        // 修改后的 loadMore 函数
         async loadMore() {
-          if (!this.nextCursor || this.loading || this.isGuest) return;
+          if (!this.nextCursor || this.loading) return;
           this.loading = true;
           try {
-            const response = await fetch(`./api/manage/list?limit=100&cursor=${encodeURIComponent(this.nextCursor)}`);
-            
-            if (!response.ok) {
-              throw new Error(`HTTP error! status: ${response.status}`);
-            }
-            
+            const response = await fetch(`./api/manage/list?limit=100&cursor=${encodeURIComponent(this.nextCursor)}`, {
+              method: 'GET',
+              credentials: 'include'
+            });
             const result = await response.json();
             const invalidPrefixes = ['session:', 'chunk:', 'upload:', 'temp:'];
             const filtered = (result.keys || []).filter(img => {
@@ -1151,9 +1144,8 @@
             this.showToast(`加载了 ${newImages.length} 张图片`, 'success');
           } catch (error) {
             this.showToast('加载失败', 'error');
-          } finally {
-            this.loading = false;
           }
+          this.loading = false;
         },
 
         handleSearch() {
@@ -1164,13 +1156,10 @@
         },
 
         toggleSelect(img) {
-          if (!this.isGuest) {
-            img.selected = !img.selected;
-          }
+          img.selected = !img.selected;
         },
 
         selectAll() {
-          if (this.isGuest) return;
           const newState = !this.isAllSelected;
           this.filteredImages.forEach(img => img.selected = newState);
         },
@@ -1197,7 +1186,6 @@
         },
 
         batchCopy() {
-          if (this.isGuest) return;
           const selected = this.images.filter(img => img.selected);
           const links = selected.map(img => this.formatLink(img)).join('\n');
           this.copyToClipboard(links);
@@ -1205,7 +1193,6 @@
         },
 
         batchDownload() {
-          if (this.isGuest) return;
           const selected = this.images.filter(img => img.selected);
           this.showToast(`开始下载 ${selected.length} 个文件`, 'info');
           selected.forEach((img, i) => {
@@ -1216,7 +1203,6 @@
         },
 
         async batchDelete() {
-          if (this.isGuest) return;
           const selected = this.images.filter(img => img.selected);
           if (!confirm(`确定要删除这 ${selected.length} 个文件吗？`)) return;
           
@@ -1238,10 +1224,13 @@
         },
 
         previewImage(img) {
+          // 文件信息
           const fileName = img.metadata?.fileName || img.name;
+          // 构造绝对直链 URL（必须是完整的 https:// 链接）
           const fileUrl = `${this.baseURL}/file/${img.name}`;
           const ext = fileName.split('.').pop().toLowerCase();
           
+          // 图片类型 - 保持原生 Lightbox 预览
           const imageExts = ['jpg', 'jpeg', 'png', 'gif', 'webp', 'bmp', 'svg', 'ico'];
           if (imageExts.includes(ext)) {
             this.previewData = {
@@ -1253,11 +1242,13 @@
             return;
           }
           
+          // 视频/音频/文档类型 - 使用 Blog Preview iframe
           const videoExts = ['mp4', 'webm', 'mkv', 'avi', 'mov', 'm3u8'];
           const audioExts = ['mp3', 'wav', 'ogg', 'flac', 'm4a'];
           const docExts = ['pdf', 'txt', 'doc', 'docx'];
           
           if (videoExts.includes(ext) || audioExts.includes(ext) || docExts.includes(ext)) {
+            // 构造 iframe URL - 必须对参数进行 encodeURIComponent 编码
             const targetUrl = encodeURIComponent(fileUrl);
             const targetTitle = encodeURIComponent(fileName);
             const iframeSrc = `${PREVIEW_SERVICE_BASE}/preview?url=${targetUrl}&title=${targetTitle}&autoplay=1`;
@@ -1272,9 +1263,11 @@
             return;
           }
           
+          // 其他类型（.zip, .exe 等）- 直接下载
           this.downloadImage(img);
         },
 
+        // 关闭预览并销毁 iframe
         closePreview() {
           if (this.$refs.previewIframe) {
             this.$refs.previewIframe.src = 'about:blank';
@@ -1282,6 +1275,7 @@
           this.previewData = null;
         },
 
+        // 复制预览链接
         copyPreviewLink() {
           if (this.previewData) {
             this.copyToClipboard(this.previewData.url);
@@ -1297,7 +1291,6 @@
         },
 
         async deleteImage(img, index) {
-          if (this.isGuest) return;
           if (!confirm('确定要删除这个文件吗？')) return;
           try {
             const response = await fetch(`./api/manage/delete/${img.name}`, {
@@ -1352,21 +1345,12 @@
         },
 
         async checkAuth() {
-          // 检查是否是访客模式（从 sessionStorage 读取）
-          const isGuestMode = sessionStorage.getItem('aq_guest_mode') === 'true';
-          if (isGuestMode) {
-            this.isGuest = true;
-            return true;
-          }
-
           try {
             const response = await fetch('/api/auth/check', { credentials: 'include' });
             const data = await response.json();
             if (data.authRequired && !data.authenticated) {
-              // 注释掉强制跳转，改为设置访客模式
-              // window.location.href = '/login.html?redirect=' + encodeURIComponent(window.location.pathname);
-              this.isGuest = true;
-              return true;
+              window.location.href = '/login.html?redirect=' + encodeURIComponent(window.location.pathname);
+              return false;
             }
             return true;
           } catch (e) {
@@ -1382,6 +1366,7 @@
 
         this.loadImages();
 
+        // 键盘快捷键
         document.addEventListener('keydown', (e) => {
           if (e.key === 'Escape' && this.previewData) {
             this.closePreview();
