@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>登录 | K-Vault</title>
+  <title>登录 | AQ存储</title>
   <link rel="icon" type="image/x-icon" href="/favicon.ico">
   <link rel="apple-touch-icon" href="/logo.png">
   <link rel="shortcut icon" href="/favicon.ico">
@@ -276,21 +276,6 @@
       gap: 8px;
     }
 
-    .footer-text {
-      margin-top: 24px;
-      color: #999;
-      font-size: 0.85em;
-    }
-
-    .footer-text a {
-      color: var(--primary-color);
-      text-decoration: none;
-    }
-
-    .footer-text a:hover {
-      text-decoration: underline;
-    }
-
     /* 动画 */
     @keyframes fadeInUp {
       from {
@@ -341,7 +326,7 @@
         height: 32px;
       }
 
-      .submit-btn {
+      .login-btn {
         padding: 14px;
         font-size: 1em;
       }
@@ -374,13 +359,8 @@
         font-size: 0.85em;
       }
 
-      .login-form {
-        gap: 16px;
-        margin-top: 24px;
-      }
-
       .form-group {
-        margin-bottom: 0;
+        margin-bottom: 16px;
       }
 
       .form-group label {
@@ -405,24 +385,12 @@
         font-size: 0.9em;
       }
 
-      .submit-btn {
+      .login-btn {
         padding: 12px;
         font-size: 0.95em;
         border-radius: 10px;
-        margin-top: 4px;
       }
 
-      .links {
-        margin-top: 20px;
-        flex-direction: column;
-        gap: 10px;
-      }
-
-      .links a {
-        font-size: 0.85em;
-      }
-
-      /* Element UI 消息优化 */
       .el-message {
         min-width: auto !important;
         max-width: 90% !important;
@@ -458,13 +426,11 @@
         font-size: 0.9em;
       }
 
-      .submit-btn {
+      .login-btn {
         padding: 10px;
         font-size: 0.9em;
       }
     }
-
-    /* 深色模式支持 */
   </style>
   <link rel="stylesheet" href="/mobile-refactor.css">
 </head>
@@ -478,7 +444,7 @@
       <div class="logo">
         <i class="fas fa-cloud-upload-alt"></i>
       </div>
-      <h1 class="title">K-Vault</h1>
+      <h1 class="title">AQ存储</h1>
       <p class="subtitle">请登录以继续使用文件托管服务</p>
 
       <div class="error-message" id="errorMessage">
@@ -518,10 +484,6 @@
           <span>登 录</span>
         </button>
       </form>
-
-      <p class="footer-text">
-        Powered by <a href="https://github.com/katelya77/K-Vault" target="_blank">K-Vault</a>
-      </p>
     </div>
   </div>
 
