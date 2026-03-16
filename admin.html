@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>K-Vault | 管理后台</title>
+  <title>AQ存储 | 管理后台</title>
   <link rel="icon" type="image/x-icon" href="/favicon.ico">
   <link rel="apple-touch-icon" href="/logo.png">
   <link rel="shortcut icon" href="/favicon.ico">
@@ -818,13 +818,8 @@
       <el-header>
         <div class="header-content">
           <span class="home-btn" @click="goHome"><i class="fas fa-home"></i></span>
-          <span class="title" @click="refreshDashboard">管理后台</span>
+          <span class="title" @click="refreshDashboard"><i class="fas fa-cog"></i></span>
           <div class="search-card"><el-input v-model="search" size="mini" placeholder="输入关键字搜索"></el-input></div>
-          <span class="stats" role="status" aria-live="polite">
-            <i class="fas fa-chart-line stats-icon"></i>
-            <span class="stats-text">总记录: {{ totalCount || Number }}</span>
-            <small class="stats-loaded">已加载 {{ Number }}</small>
-          </span>
           <div class="actions">
             <el-dropdown @command="switchFileType" :hide-on-click="false">
               <span class="el-dropdown-link"><i :class="fileTypeIcon"></i></span>
@@ -1225,26 +1220,20 @@
             </template>
             <div class="pagination-container">
               <el-pagination
-                background layout="total, prev, pager, next"
+                background layout="prev, pager, next"
                 :total="paginationTotal" :page-size="pageSize"
                 @current-change="handlePageChange" :current-page.sync="currentPage" />
             </div>
             <div style="text-align:center;margin-top:16px;">
               <el-button v-if="nextCursor" :loading="isLoadingMore" :disabled="isLoadingMore" @click="loadMore">
-                {{ isLoadingMore ? '加载中...' : ('加载更多 (' + Number + '/' + (totalCount || Number) + ')') }}
+                {{ isLoadingMore ? '加载中...' : '加载更多' }}
               </el-button>
               <div v-else-if="(totalCount || Number) > 0 && Number >= (totalCount || Number)" class="load-more-end">
-                全部加载完成，共 {{ totalCount || Number }} 条
+                全部加载完成
               </div>
             </div>
           </section>
         </div>
-  <el-footer class="footer">
-          <div>Powered By K-Vault</div>
-          <a href="https://github.com/katelya77/K-Vault" target="_blank" rel="noopener noreferrer">
-            <div><i class="fa-brands fa-github"></i> K-Vault</div>
-          </a>
-        </el-footer>
       </el-main>
     </el-container>
     <el-dialog
