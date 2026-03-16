@@ -1008,7 +1008,7 @@
         previewData: null,
         toasts: [],
         searchTimer: null,
-        isGuest: false  // 新增：访客模式标志
+        isGuest: false
       },
       computed: {
         filteredImages() {
@@ -1078,22 +1078,26 @@
         }
       },
       methods: {
+        // 修改后的 loadImages 函数 - 访客可见
         async loadImages() {
           this.loading = true;
           try {
-            const response = await fetch('./api/manage/list?limit=100', {
-              method: 'GET',
-              credentials: 'include'
-            });
+            // 去掉 credentials: 'include'，让访客也能访问
+            const response = await fetch('./api/manage/list?limit=100');
             
-            // 如果是访客模式，即使返回 401 也继续
-            if (response.status === 401 && this.isGuest) {
-              this.images = [];
-              this.loading = false;
-              return;
-            }
+            // 移除 401 的判断，因为接口现在是公开的
+            // if (response.status === 401 && this.isGuest) {
+            //   this.images = [];
+            //   this.loading = false;
+            //   return;
+            // }
 
             const result = await response.json();
+            
+            if (!response.ok) {
+              throw new Error('加载失败');
+            }
+            
             const invalidPrefixes = ['session:', 'chunk:', 'upload:', 'temp:'];
             const filtered = (result.keys || []).filter(img => {
               if (!img.name) return false;
@@ -1101,6 +1105,7 @@
               const metadata = img.metadata || {};
               return metadata.fileName && metadata.TimeStamp !== undefined && metadata.TimeStamp !== null;
             });
+            
             this.images = filtered.map(img => ({
               ...img,
               selected: false,
@@ -1109,22 +1114,23 @@
                 fileName: img.metadata?.fileName || img.name
               }
             }));
+            
             this.nextCursor = result.list_complete ? null : result.cursor;
             this.hasMore = !result.list_complete;
           } catch (error) {
             this.showToast('加载失败，请检查网络', 'error');
+          } finally {
+            this.loading = false;
           }
-          this.loading = false;
         },
 
+        // 修改后的 loadMore 函数
         async loadMore() {
           if (!this.nextCursor || this.loading || this.isGuest) return;
           this.loading = true;
           try {
-            const response = await fetch(`./api/manage/list?limit=100&cursor=${encodeURIComponent(this.nextCursor)}`, {
-              method: 'GET',
-              credentials: 'include'
-            });
+            // 去掉 credentials: 'include'
+            const response = await fetch(`./api/manage/list?limit=100&cursor=${encodeURIComponent(this.nextCursor)}`);
             const result = await response.json();
             const invalidPrefixes = ['session:', 'chunk:', 'upload:', 'temp:'];
             const filtered = (result.keys || []).filter(img => {
@@ -1147,8 +1153,9 @@
             this.showToast(`加载了 ${newImages.length} 张图片`, 'success');
           } catch (error) {
             this.showToast('加载失败', 'error');
+          } finally {
+            this.loading = false;
           }
-          this.loading = false;
         },
 
         handleSearch() {
