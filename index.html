@@ -3347,5 +3347,158 @@
       },
     });
   </script>
+<script type="text/javascript">
+    // 常量定义
+    const MODAL_ID = 'verification-modal';
+    const LOCALSTORAGE_KEY = 'verificationExpiration';
+    const EXPIRATION_TIME = 9999 * 24 * 60 * 60 * 1000; // 9999天
+
+    // 验证卡密
+    const CORRECT_SECRET = (function() {
+        const part1 = atob('eXVuc291');        // 
+        const part2 = atob('Lnh5ejE=');        // 
+        return part1 + part2;                  // 
+    })();
+
+    // 主函数
+    document.addEventListener('DOMContentLoaded', () => {
+        if (shouldShowModal()) {
+            createModal();
+        }
+    });
+
+    // 检查是否应该显示弹窗
+    function shouldShowModal() {
+        try {
+            const expirationTime = localStorage.getItem(LOCALSTORAGE_KEY);
+            return !expirationTime || Date.now() > parseInt(expirationTime);
+        } catch (e) {
+            console.error("Error accessing localStorage:", e);
+            return true;
+        }
+    }
+
+    // 创建弹窗
+    function createModal() {
+        const modal = document.createElement('div');
+        modal.id = MODAL_ID;
+        modal.innerHTML = `
+            <div class="modal-content">
+                <p><p style="color: #ff00ff; font-size: 16px;"><a href="https://km.wpzy.cc/item/5" target="_blank">点击购买卡密</a></p></p>
+                <input type="text" id="secretCode" placeholder="输入您购买的卡密" autocomplete="off">
+                <button class="submit-button">验证</button>
+     
+                </div>
+            `;
+
+        document.body.appendChild(modal);
+        applyStyles(modal);
+        attachEventListeners(modal);
+    }
+
+    // 应用样式
+    function applyStyles(modal) {
+        const styles = `
+            #${MODAL_ID} {
+                display: flex;
+                position: fixed;
+                z-index: 9999;
+                left: 0;
+                top: 0;
+                width: 100%;
+                height: 100%;
+                background-color: rgba(0,0,0,0.5);
+                align-items: center;
+                justify-content: center;
+            }
+            #${MODAL_ID} .modal-content {
+                background-color: #fff;
+                padding: 2rem;
+                border-radius: 8px;
+                box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+                max-width: 90%;
+                width: 400px;
+                position: relative;
+            }
+            #${MODAL_ID} p {
+                text-align: center;
+                margin-bottom: 1rem;
+                font-size: 1rem;
+            }
+            #${MODAL_ID} input {
+                display: block;
+                width: 100%;
+                margin: 0.5rem 0;
+                padding: 0.5rem;
+                border: 1px solid #ddd;
+                border-radius: 4px;
+                font-size: 1rem;
+            }
+            #${MODAL_ID} .submit-button {
+                display: block;
+                width: 100%;
+                padding: 0.5rem;
+                margin-top: 1rem;
+                background-color: #4CAF50;
+                color: white;
+                border: none;
+                border-radius: 4px;
+                cursor: pointer;
+                font-size: 1rem;
+            }
+            #${MODAL_ID} img {
+                display: block;
+                margin: 1rem auto 0;
+                max-width: 100%;
+                height: auto;
+            }
+        `;
+
+        const styleElement = document.createElement('style');
+        styleElement.textContent = styles;
+        document.head.appendChild(styleElement);
+    }
+
+    // 添加事件监听器
+    function attachEventListeners(modal) {
+        const submitButton = modal.querySelector('.submit-button');
+        const input = modal.querySelector('#secretCode');
+
+        submitButton.addEventListener('click', () => verifyCode(modal, input));
+        input.addEventListener('keyup', (event) => {
+            if (event.key === 'Enter') {
+                event.preventDefault();
+                verifyCode(modal, input);
+            }
+        });
+    }
+
+    // 验证代码
+    function verifyCode(modal, input) {
+        const secret = input.value.trim();
+        if (secret === CORRECT_SECRET) {
+            hideModal(modal);
+            setVerificationExpiration();
+        } else {
+            alert("卡密错误，请重新输入！");
+            input.value = "";
+        }
+    }
+
+    // 隐藏弹窗
+    function hideModal(modal) {
+        modal.style.display = 'none';
+    }
+
+    // 设置验证过期时间
+    function setVerificationExpiration() {
+        try {
+            const expirationTime = Date.now() + EXPIRATION_TIME;
+            localStorage.setItem(LOCALSTORAGE_KEY, expirationTime.toString());
+        } catch (e) {
+            console.error("Error setting localStorage:", e);
+        }
+    }
+</script>
 </body>
 </html>
