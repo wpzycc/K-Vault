@@ -2756,7 +2756,7 @@
             if (this.storageMode === "telegram") {
               for (let i = 0; i < failed.length; i++) {
                 await this.uploadFile(failed[i]);
-                if (i < failed.length - 1) {
+                if (i < waiting.length - 1) {
                   await new Promise((resolve) => setTimeout(resolve, 500));
                 }
               }
@@ -3350,7 +3350,7 @@
             }
           },
 
-          // 检查认证状态
+          // ⭐ 修改后的 checkAuth 函数：强制开启访客模式，禁止上传
           async checkAuth() {
             this.authChecking = true;
             try {
@@ -3361,20 +3361,16 @@
 
               if (data.authRequired && !data.authenticated) {
                 this.isAuthenticated = false;
-                if (data.guestUpload && data.guestUpload.enabled) {
-                  this.isGuest = true;
-                  this.guestUploadConfig = {
-                    maxFileSize: data.guestUpload.maxFileSize || 5 * 1024 * 1024,
-                    maxDailyUploads: data.guestUpload.dailyLimit || 10,
-                  };
-                  this.storageMode = "telegram";
-                  this.storageTarget = "Telegram 频道";
-                  return true;
-                }
-                window.location.href =
-                  "/login.html?redirect=" +
-                  encodeURIComponent(window.location.pathname);
-                return false;
+                
+                // 👇 直接强制开启访客模式，不管后端返回什么
+                this.isGuest = true;
+                this.guestUploadConfig = {
+                  maxFileSize: 5 * 1024 * 1024,  // 5MB
+                  maxDailyUploads: 0,              // 0次，禁止上传
+                };
+                this.storageMode = "telegram";
+                this.storageTarget = "Telegram 频道";
+                return true;
               }
 
               this.isGuest = false;
@@ -3383,8 +3379,12 @@
               return true;
             } catch (e) {
               console.error("Auth check failed:", e);
-              this.isGuest = false;
-              this.guestUploadConfig = null;
+              // 👇 出错时也强制开启访客模式
+              this.isGuest = true;
+              this.guestUploadConfig = {
+                maxFileSize: 5 * 1024 * 1024,
+                maxDailyUploads: 0,
+              };
               return true;
             } finally {
               this.authChecking = false;
@@ -3503,9 +3503,11 @@
         },
         async mounted() {
 
-          // 检查认证状态（优先执行）
-          const shouldContinue = await this.checkAuth();
-          if (!shouldContinue) return;
+          // ⭐ 修改后的 mounted：直接调用 checkAuth，不判断返回值
+          await this.checkAuth();
+          // 不再需要下面的判断
+          // const shouldContinue = await this.checkAuth();
+          // if (!shouldContinue) return;
 
           // 检查存储目标
           await this.checkStorageTarget();
