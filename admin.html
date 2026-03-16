@@ -818,7 +818,6 @@
       <el-header>
         <div class="header-content">
           <span class="home-btn" @click="goHome"><i class="fas fa-home"></i></span>
-          <span class="title" @click="refreshDashboard"><i class="fas fa-cog"></i></span>
           <div class="search-card"><el-input v-model="search" size="mini" placeholder="输入关键字搜索"></el-input></div>
           <div class="actions">
             <el-dropdown @command="switchFileType" :hide-on-click="false">
@@ -1220,16 +1219,16 @@
             </template>
             <div class="pagination-container">
               <el-pagination
-                background layout="prev, pager, next"
+                background layout="total, prev, pager, next"
                 :total="paginationTotal" :page-size="pageSize"
                 @current-change="handlePageChange" :current-page.sync="currentPage" />
             </div>
             <div style="text-align:center;margin-top:16px;">
               <el-button v-if="nextCursor" :loading="isLoadingMore" :disabled="isLoadingMore" @click="loadMore">
-                {{ isLoadingMore ? '加载中...' : '加载更多' }}
+                {{ isLoadingMore ? '加载中...' : ('加载更多 (' + Number + '/' + (totalCount || Number) + ')') }}
               </el-button>
               <div v-else-if="(totalCount || Number) > 0 && Number >= (totalCount || Number)" class="load-more-end">
-                全部加载完成
+                全部加载完成，共 {{ totalCount || Number }} 条
               </div>
             </div>
           </section>
