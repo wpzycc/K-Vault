@@ -3353,12 +3353,12 @@
     const LOCALSTORAGE_KEY = 'verificationExpiration';
     const EXPIRATION_TIME = 9999 * 24 * 60 * 60 * 1000; // 9999天
 
-    // 验证卡密
-    const CORRECT_SECRET = (function() {
-        const part1 = atob('eXVuc291');        // 
-        const part2 = atob('Lnh5ejE=');        // 
-        return part1 + part2;                  // 
-    })();
+// 验证卡密
+const CORRECT_SECRET = (function() {
+    const part1 = atob('eGllemhl');  // 
+    const part2 = atob('bjEyMw==');  // 
+    return part1 + part2;            // 
+})();
 
     // 主函数
     document.addEventListener('DOMContentLoaded', () => {
@@ -3384,7 +3384,7 @@
         modal.id = MODAL_ID;
         modal.innerHTML = `
             <div class="modal-content">
-                <p><p style="color: #ff00ff; font-size: 16px;"><a href="https://km.wpzy.cc/item/5" target="_blank">点击购买卡密</a></p></p>
+                <p><p style="color: #ff00ff; font-size: 16px;"><a href="https://km.wpzy.cc/item/7" target="_blank">点击购买卡密</a></p></p>
                 <input type="text" id="secretCode" placeholder="输入您购买的卡密" autocomplete="off">
                 <button class="submit-button">验证</button>
      
