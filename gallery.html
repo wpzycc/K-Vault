@@ -1082,21 +1082,14 @@
         async loadImages() {
           this.loading = true;
           try {
-            // 去掉 credentials: 'include'，让访客也能访问
+            // 直接请求，不带任何凭证
             const response = await fetch('./api/manage/list?limit=100');
             
-            // 移除 401 的判断，因为接口现在是公开的
-            // if (response.status === 401 && this.isGuest) {
-            //   this.images = [];
-            //   this.loading = false;
-            //   return;
-            // }
+            if (!response.ok) {
+              throw new Error(`HTTP error! status: ${response.status}`);
+            }
 
             const result = await response.json();
-            
-            if (!response.ok) {
-              throw new Error('加载失败');
-            }
             
             const invalidPrefixes = ['session:', 'chunk:', 'upload:', 'temp:'];
             const filtered = (result.keys || []).filter(img => {
@@ -1118,6 +1111,7 @@
             this.nextCursor = result.list_complete ? null : result.cursor;
             this.hasMore = !result.list_complete;
           } catch (error) {
+            console.error('加载失败:', error);
             this.showToast('加载失败，请检查网络', 'error');
           } finally {
             this.loading = false;
@@ -1129,8 +1123,12 @@
           if (!this.nextCursor || this.loading || this.isGuest) return;
           this.loading = true;
           try {
-            // 去掉 credentials: 'include'
             const response = await fetch(`./api/manage/list?limit=100&cursor=${encodeURIComponent(this.nextCursor)}`);
+            
+            if (!response.ok) {
+              throw new Error(`HTTP error! status: ${response.status}`);
+            }
+            
             const result = await response.json();
             const invalidPrefixes = ['session:', 'chunk:', 'upload:', 'temp:'];
             const filtered = (result.keys || []).filter(img => {
