@@ -1,7 +1,7 @@
 export async function onRequest(context) {
   const { env, request } = context;
   const url = new URL(request.url);
-  // 核心：从请求中获取游标，如果没有就是第一页
+  // 获取游标，如果没有就是第一页
   const cursor = url.searchParams.get("cursor") || undefined;
   
   const headers = {
@@ -32,7 +32,7 @@ export async function onRequest(context) {
     });
 
     // 转换成专辑列表（不再随机抽，把这一页的专辑全部返回）
-    const albumList = Object.keys(albums).map((folder, index) => {
+    const albumList = Object.keys(albums).map((folder) => {
       const photos = albums[folder];
       photos.sort((a, b) => {
         const ta = a.metadata?.TimeStamp || 0;
@@ -41,7 +41,7 @@ export async function onRequest(context) {
       });
       
       return {
-        id: index + 1,
+        id: folder, // 🌟 核心修改：用文件夹名做唯一 ID，保证跨页不冲突
         title: folder,
         total_photos: photos.length,
         cover: `https://tg.wpys.cc/file/${photos[0].name}`,
