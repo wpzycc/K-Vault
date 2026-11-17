@@ -7,14 +7,19 @@ export async function onRequest(context) {
 
   try {
     const url = new URL(context.request.url);
-    let cursor = url.searchParams.get('cursor') || undefined;
+    
+    // 获取游标和偏移量
+    let baseCursor = url.searchParams.get('cursor') || undefined;
+    let skip = parseInt(url.searchParams.get('skip') || '0', 10);
     const MAX_ALBUMS = 10;
 
     let albumList = [];
     let listComplete = false;
+    let currentCursor = baseCursor;
 
-    while (albumList.length < MAX_ALBUMS) {
-      const list = await env.img_url.list({ limit: 1000, cursor });
+    // 翻页拿数据
+    while (true) {
+      const list = await env.img_url.list({ limit: 1000, cursor: currentCursor });
       const keys = list.keys || [];
 
       const imageKeys = keys.filter(key => {
@@ -43,25 +48,51 @@ export async function onRequest(context) {
           };
         });
 
-      albumList = albumList.concat(pageAlbums);
-
+      albumList = pageAlbums;
+      
       if (list.list_complete) {
         listComplete = true;
+        currentCursor = null;
         break;
       }
-      cursor = list.cursor;
-
-      if (albumList.length >= MAX_ALBUMS) {
+      currentCursor = list.cursor;
+      
+      if (albumList.length > skip) {
         break;
       }
+      
+      skip -= albumList.length;
     }
 
-    const limitedAlbums = albumList.slice(0, MAX_ALBUMS);
+    // 开始截取数据
+    let limitedAlbums = [];
+    let nextCursor = null;
+    let nextSkip = 0;
+
+    if (albumList.length > skip) {
+      // 截取 10 个
+      limitedAlbums = albumList.slice(skip, skip + MAX_ALBUMS);
+
+      // 判断这页是不是还没被掏空
+      if (skip + MAX_ALBUMS < albumList.length) {
+        // 这页还有剩，游标保持当前的，让脚本带着 skip 再来一次
+        nextCursor = baseCursor; 
+        nextSkip = skip + MAX_ALBUMS;
+      } else {
+        // 这页刚好掏空了，游标指向下一页
+        nextCursor = listComplete ? null : currentCursor;
+        nextSkip = 0;
+      }
+    } else {
+      nextCursor = listComplete ? null : currentCursor;
+      nextSkip = 0;
+    }
 
     return new Response(JSON.stringify({
       albums: limitedAlbums,
-      next_cursor: listComplete ? null : cursor,
-      list_complete: listComplete
+      next_cursor: nextCursor,
+      next_skip: nextSkip,
+      list_complete: listComplete && nextCursor === null
     }), { headers });
 
   } catch (error) {
