@@ -8,16 +8,17 @@ export async function onRequest(context) {
   try {
     const url = new URL(context.request.url);
     
-    // 获取游标和偏移量
+    // 获取游标和本页的偏移量
     let baseCursor = url.searchParams.get('cursor') || undefined;
     let skip = parseInt(url.searchParams.get('skip') || '0', 10);
-    const MAX_ALBUMS = 10;
+    const MAX_ALBUMS = 10; // 每次只返回 10 个专辑
 
     let albumList = [];
     let listComplete = false;
     let currentCursor = baseCursor;
+    let nextPageCursor = baseCursor;
 
-    // 翻页拿数据
+    // 去 KV 翻页拉取数据
     while (true) {
       const list = await env.img_url.list({ limit: 1000, cursor: currentCursor });
       const keys = list.keys || [];
@@ -50,42 +51,42 @@ export async function onRequest(context) {
 
       albumList = pageAlbums;
       
-      if (list.list_complete) {
-        listComplete = true;
-        currentCursor = null;
-        break;
-      }
-      currentCursor = list.cursor;
-      
+      // 记录下一页的游标
+      nextPageCursor = list.list_complete ? null : list.cursor;
+      listComplete = list.list_complete;
+
+      // 如果当前这页的专辑数大于 skip，说明不用去下一页找，直接在这页截取即可
       if (albumList.length > skip) {
         break;
       }
       
+      // 如果当前页的专辑数不够扣，说明这页已经被彻底跳过了，去下一页
       skip -= albumList.length;
+      currentCursor = nextPageCursor;
+
+      // 如果真拉到底了，退出循环
+      if (listComplete) break;
     }
 
-    // 开始截取数据
+    // 开始截取当前页要返回的数据
     let limitedAlbums = [];
     let nextCursor = null;
     let nextSkip = 0;
 
     if (albumList.length > skip) {
-      // 截取 10 个
+      // 截取 10 个专辑
       limitedAlbums = albumList.slice(skip, skip + MAX_ALBUMS);
 
-      // 判断这页是不是还没被掏空
+      // 判断这 1000 张图分出的专辑，是不是还没被掏空
       if (skip + MAX_ALBUMS < albumList.length) {
-        // 这页还有剩，游标保持当前的，让脚本带着 skip 再来一次
+        // 这页还有剩，游标保持当前的，让脚本带着新的 skip 再来拿剩余部分
         nextCursor = baseCursor; 
         nextSkip = skip + MAX_ALBUMS;
       } else {
-        // 这页刚好掏空了，游标指向下一页
-        nextCursor = listComplete ? null : currentCursor;
+        // 这页刚好掏空了，游标指向真正的下一页
+        nextCursor = nextPageCursor;
         nextSkip = 0;
       }
-    } else {
-      nextCursor = listComplete ? null : currentCursor;
-      nextSkip = 0;
     }
 
     return new Response(JSON.stringify({
